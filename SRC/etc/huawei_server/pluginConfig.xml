@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+   <config name="log">
+		<!--Log level DEBUG, INFO, WARN, ERROR, FATAL-->
+		<param name="level">DEBUG</param>
+		<!--Log file records the maximum file size (in MB), after compression to-->
+		<param name="size">20</param>
+		<!--Log the maximum number of compressed file backup-->
+		<param name="index">30</param>
+	</config>
+</plugin>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<device devType="commom">
+	<system>
+		<basic>
+			<node method="get" state="on">
+				<oid name="systemHealth" replace="1:0,2:1,3:1,4:2">1.3.6.1.4.1.2011.2.235.1.1.1.1.0</oid>
+			</node>
+			<node method="get">
+				<oid name="deviceName">1.3.6.1.4.1.2011.2.235.1.1.1.6.0</oid>
+			</node>
+			<node method="get">
+				<oid name="deviceSerialNo">1.3.6.1.4.1.2011.2.235.1.1.1.7.0</oid>
+			</node>
+			<node method="get">
+				<oid name="systemPowerState" replace="1:gracefulPowerOff,2:powerOn,3:coldReset,4:gracefulReboot,5:forciblyPowerOff">1.3.6.1.4.1.2011.2.235.1.1.1.12.0</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="get">
+				<oid name="systemHealth" replace="1:ok,2:minor,3:major,4:critical">1.3.6.1.4.1.2011.2.235.1.1.1.1.0</oid>
+			</node>
+			<node method="get">
+				<oid name="deviceName">1.3.6.1.4.1.2011.2.235.1.1.1.6.0</oid>
+			</node>
+			<node method="get">
+				<oid name="deviceSerialNo">1.3.6.1.4.1.2011.2.235.1.1.1.7.0</oid>
+			</node>
+			<node method="get">
+				<oid name="systemPowerState" replace="1:gracefulPowerOff,2:powerOn,3:coldReset,4:gracefulReboot,5:forciblyPowerOff">1.3.6.1.4.1.2011.2.235.1.1.1.12.0</oid>
+			</node>
+		</extension>
+	</system>
+	<power>
+		<basic>
+			<node method="get" state="on">
+				<oid name="powerSupplyEntireStatus" replace="1:0,2:1,3:1,4:2,5:3,6:3">1.3.6.1.4.1.2011.2.235.1.1.6.1.0</oid>
+			</node>
+			<node method="bulk" show="presence">
+				<oid name="powerSupplyPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.9</oid>
+			</node>
+			<node method="bulk" show="empty">
+				<oid name="powerSupplyDevicename" value="empty">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.13</oid>
+				<oid name="powerSupplyStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.7</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="get">
+				<oid name="powerSupplyEntireStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.6.1.0</oid>
+			</node>
+			<node method="bulk">
+				<oid name="powerSupplyDevicename">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.13</oid>
+				<oid name="powerSupplyPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.9</oid>
+				<oid name="powerSupplyStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.7</oid>
+				<oid name="powerSupplyPowerRating">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.6</oid>
+				<oid name="powerSupplyInputPower">1.3.6.1.4.1.2011.2.235.1.1.6.50.1.8</oid>
+			</node>
+		</extension>
+	</power>
+	<fan>
+		<basic>
+			<node method="get" state="on">
+				<oid name="fanEntireStatus" replace="1:0,2:1,3:1,4:2,5:3,6:3">1.3.6.1.4.1.2011.2.235.1.1.8.3.0</oid>
+			</node>
+			<node method="bulk" show="presence">
+				<oid name="fanPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.3</oid>
+			</node>
+			<node method="bulk" show="empty">
+				<oid name="fanDevicename" value="empty">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.7</oid>
+				<oid name="fanStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.4</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="bulk">
+				<oid name="fanDevicename">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.7</oid>
+				<oid name="fanPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.3</oid>
+				<oid name="fanStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.4</oid>
+				<oid name="fanSpeed">1.3.6.1.4.1.2011.2.235.1.1.8.50.1.2</oid>
+			</node>
+		</extension>
+	</fan>
+	<cpu>
+		<basic>
+			<node method="get" state="on">
+				<oid name="cpuEntireStatus" replace="1:0,2:1,3:1,4:2,5:3,6:3">1.3.6.1.4.1.2011.2.235.1.1.15.1.0</oid>
+			</node>
+			<node method="bulk" show="presence">
+				<oid name="cpuPresence" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.6</oid>
+			</node>
+			<node method="bulk" show="empty">
+				<oid name="cpuDevicename" value="empty">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.10</oid>
+				<oid name="cpuStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.6</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="bulk">
+				<oid name="cpuDevicename">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.10</oid>
+				<oid name="cpuStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.6</oid>
+				<oid name="cpuType">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.4</oid>
+				<oid name="cpuClockRate">1.3.6.1.4.1.2011.2.235.1.1.15.50.1.5</oid>
+			</node>
+		</extension>
+	</cpu>
+	<memory>
+		<basic>
+			<node method="get" state="on">
+				<oid name="memoryEntireStatus" replace="1:0,2:1,3:1,4:2,5:3,6:3">1.3.6.1.4.1.2011.2.235.1.1.16.1.0</oid>
+			</node>
+			<node method="bulk" show="presence">
+				<oid name="memoryPresence" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.6</oid>
+			</node>
+			<node method="bulk" show="empty">
+				<oid name="memoryDevicename" value="empty">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.10</oid>
+				<oid name="memoryStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.6</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="bulk">
+				<oid name="memoryDevicename">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.10</oid>
+				<oid name="memoryStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.6</oid>
+				<oid name="memoryManufacturer">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.3</oid>
+				<oid name="memorySize">1.3.6.1.4.1.2011.2.235.1.1.16.50.1.4</oid>
+			</node>
+		</extension>
+	</memory>
+	<hardDisk>
+		<basic>
+			<node method="get" state="on">
+				<oid name="hardDiskEntireStatus" replace="1:0,2:1,3:1,4:2,5:3,6:3">1.3.6.1.4.1.2011.2.235.1.1.18.1.0</oid>
+			</node>
+			<node method="bulk" show="presence">
+				<oid name="hardDiskPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.2</oid>
+			</node>
+			<node method="bulk" show="empty">
+				<oid name="hardDiskDevicename" value="empty">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.6</oid>
+				<oid name="hardDiskStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.3</oid>
+			</node>
+		</basic>
+		<extension>
+			<node method="bulk">
+				<oid name="hardDiskDevicename">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.6</oid>
+				<oid name="hardDiskPresence" replace="1:absence,2:presence,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.2</oid>
+				<oid name="hardDiskStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.3</oid>
+				<oid name="hardDiskSerialNumber">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.7</oid>
+				<oid name="hardDiskModelNumber">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.8</oid>
+				<oid name="hardDiskCapacityInGB" replace="-1:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.12</oid>
+				<oid name="hardDiskRebuildProgress" replace="255:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.16</oid>
+				<oid name="hardDiskTemperature" replace="255:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.20</oid>
+				<oid name="hardDiskPrefailState" replace="1:no,2:on,3:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.23</oid>
+				<oid name="hardDiskHotSpareState" replace="1:none,2:global,3:dedicated，4:commissioned,5:emergency,255:unknown">1.3.6.1.4.1.2011.2.235.1.1.18.50.1.24</oid>
+			</node>
+		</extension>
+	</hardDisk>
+	<pCIe>
+		<extension>
+			<node method="get">
+				<oid name="pCIeDeviceEntireStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.24.1.0</oid>
+			</node>
+			<node method="bulk">
+				<oid name="pCIeDeviceDevicename">1.3.6.1.4.1.2011.2.235.1.1.24.50.1.7</oid>
+				<oid name="pCIeDeviceStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.24.50.1.3</oid>
+				<oid name="pCIeDeviceManufacturer">1.3.6.1.4.1.2011.2.235.1.1.24.50.1.10</oid>
+				<oid name="pCIeDeviceDescription">1.3.6.1.4.1.2011.2.235.1.1.24.50.1.11</oid>
+			</node>
+		</extension>
+	</pCIe>
+	<raid>
+		<extension>
+			<node method="bulk">
+				<oid name="raidControllerName">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.2</oid>
+				<oid name="raidControllerType">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.3</oid>
+				<!--  
+					Information about RAID controller health state.
+					bit0: 1- memory correctable error
+					bit1: 1- memory uncorrectable error
+					bit2: 1- memory ECC error reached limit
+					bit3: 1- NVRAM uncorrectable error
+					other: reserved
+				-->
+				<oid name="raidControllerHealthState" replace="65535:unknown">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.7</oid>
+				<oid name="raidControllerBBUPresence" replace="1:absent,2:present,255:unknown">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.16</oid>
+				<oid name="raidControllerBBUType">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.17</oid>
+				<!-- 
+				Information about RAID controller's BBU health state.
+				bit0: 1 - voltage is low
+				bit1: 1 - need replace pack
+				bit2: 1 - learn cycle failed
+				bit3: 1 - learn cycle timeout
+				bit4: 1 - pack is about to fail
+				bit5: 1 - remaining capacity low
+				bit6: 1 - no space for cache offload
+				others: reserved
+				-->
+				<oid name="raidControllerBBUHealthState">1.3.6.1.4.1.2011.2.235.1.1.36.50.1.18</oid>
+			</node>
+		</extension>
+	</raid>
+	<logical>
+		<extension>
+			<node method="bulk">
+				<oid name="logicalDriveRAIDLevel">1.3.6.1.4.1.2011.2.235.1.1.37.50.1.3</oid>
+				<oid name="logicalDriveState" replace="1:offline,2:partial-degraded,3:degraded,4:optimal,255:unknown">1.3.6.1.4.1.2011.2.235.1.1.37.50.1.4</oid>
+				<oid name="logicalDriveSizeInMB" replace="-1:unknown">1.3.6.1.4.1.2011.2.235.1.1.37.50.1.15</oid>
+			</node>
+		</extension>
+	</logical>
+	<firmwareVersion>
+		<extension>
+			<node method="bulk">
+				<oid name="firmwareName">1.3.6.1.4.1.2011.2.235.1.1.11.50.1.1</oid>
+				<oid name="firmwareType" replace="1:iMana,2:fpga,3:cpld,4:bios,5:uboot,6:lcd">1.3.6.1.4.1.2011.2.235.1.1.11.50.1.2</oid>
+				<oid name="firmwareVersion">1.3.6.1.4.1.2011.2.235.1.1.11.50.1.4</oid>
+				<oid name="firmwareReleaseDate">1.3.6.1.4.1.2011.2.235.1.1.11.50.1.3</oid>
+			</node>
+		</extension>
+	</firmwareVersion>
+	<component>
+		<extension>
+			<node method="bulk">
+				<oid name="componentName">1.3.6.1.4.1.2011.2.235.1.1.10.50.1.1</oid>
+				<oid name="componentType" replace="1:baseBoard,2:mezzCard,3:amcController,4:mmcController,5:hddBackPlane,6:raidCard">1.3.6.1.4.1.2011.2.235.1.1.10.50.1.2</oid>
+				<oid name="componentStatus" replace="1:ok,2:minor,3:major,4:critical,5:absence,6:unknown">1.3.6.1.4.1.2011.2.235.1.1.10.50.1.5</oid>
+			</node>
+		</extension>
+	</component>
+	<sensor>
+		<extension>
+			<node method="bulk">
+				<oid name="sensorName">1.3.6.1.4.1.2011.2.235.1.1.13.50.1.1</oid>
+				<oid name="sensorReading">1.3.6.1.4.1.2011.2.235.1.1.13.50.1.2</oid>
+				<oid name="sensorStatus">1.3.6.1.4.1.2011.2.235.1.1.13.50.1.9</oid>
+			</node>
+		</extension>
+	</sensor>
+</device>

@@ -1,0 +1,177 @@
+define host{
+
+    use generic-host
+    
+    ## This directive is used to define a short name used to identify the host. 
+    host_name                   HUAWEI_HOST
+    
+    ## This directive is used to define a longer name or description used to identify thehost.
+    alias                       huawei
+    
+    ## This directive is used to define the number of times that Nagios will retry the host check command if it returns any state other than an OK state.
+    max_check_attempts          1
+    
+    #This directive is used to define the address of the host.
+    address                     HUAWEI_HOST_IP
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    
+     max_check_attempts          1
+    normal_check_interval       10
+    
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    
+    check_freshness             0
+    #freshness_threshold         7200
+    
+    service_description         system
+    check_command               servertrapdcheck
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    
+     max_check_attempts          1
+    normal_check_interval       10
+    
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    
+    check_freshness             0
+    #freshness_threshold         7200
+    
+    service_description         power    
+    check_command               servertrapdcheck
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    
+     max_check_attempts          1
+    normal_check_interval       10
+    
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    
+    check_freshness             0
+    #freshness_threshold         7200
+    
+    service_description         fan
+    check_command               servertrapdcheck
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    max_check_attempts          1
+    normal_check_interval       10
+    
+    is_volatile                 1
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    check_freshness             0
+    #freshness_threshold        7200
+    
+    service_description         cpu
+    check_command               servertrapdcheck 
+}
+
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    max_check_attempts          1
+    normal_check_interval       10
+    
+    is_volatile                 1
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    check_freshness             0
+    #freshness_threshold        7200
+    
+    service_description         memory
+    check_command               servertrapdcheck 
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    max_check_attempts          1
+    normal_check_interval       10
+    
+    is_volatile                 1
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    check_freshness             0
+    #freshness_threshold        7200
+    
+    service_description         hardDisk
+    check_command               servertrapdcheck 
+}
+
+define service{
+    use                         generic-service
+    host_name                   HUAWEI_HOST
+    max_check_attempts          1
+    normal_check_interval       10
+    
+    is_volatile                 1
+    #huawei services service require
+    active_checks_enabled       0
+    passive_checks_enabled      1
+    check_freshness             0
+    #freshness_threshold        7200
+    
+    service_description         alarm
+    check_command               servertrapdcheck 
+}
+
+
+################################################
+# listener huawei server plugin run status. 
+#
+# begin
+#
+define host{
+    use                         generic-host
+    host_name                   huawei-server-plugin
+    alias                       huawei
+    max_check_attempts          1
+    check_interval              1
+    address                     127.0.0.1
+}
+define service{
+    use                         generic-service
+    host_name                   huawei-server-plugin
+    
+    max_check_attempts          1
+    normal_check_interval       1
+    
+    is_volatile                 1
+    #huawei services service require
+    active_checks_enabled       1
+    passive_checks_enabled      0
+    
+    service_description         listener huawei server plugin status
+    check_command               servertrapdcheck
+}
+define command{
+    command_name                servertrapdcheck
+    command_line                /bin/bash $USER1$/huawei_server/trapdcheck.sh
+}
+
+#
+# end 
+################################################

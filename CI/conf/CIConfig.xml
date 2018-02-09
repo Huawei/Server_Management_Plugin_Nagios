@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ciConfig version="1.0">
+	
+	<baseproperties>
+		<property name="run.analyse.with.baseCode" value="true"/>
+		<property name="run.analyse.with.baseReport" value="true"/>
+		<property name="plugin.pclint.runEA" value="false" />
+		<property name="run.compile.maxErrorNumber" value="100" />
+		<property name="run.compile.maxWarningNumber" value="100" />
+		<!--property name="run.compile.userRegexfile" value="compileRegex/regex.xml" /-->		
+		<property name="robocopy.exclude" value=".svn;.hg" />
+		<property name="rsync.exclude" value=".svn;.hg" />
+	</baseproperties>
+    <compiles>
+        <compile name ="compile_plugin" layerPath="/plugin"  compiler="javac" compileFilePath="Build/CI/script" compileFile="compile_common.bat" compileParam="" >
+	    </compile>
+	</compiles>
+	
+	<!-- "打包任务" --> 
+    <packages> 
+		<!--打common包-->
+		<package name = "package_plugin"   workingDir="Build/CI/script" executable = "package_plugin.xml" argParam = "" >
+				<result miniSize="">
+					<include name="eSight_IT_Base_Framework_AppBase_V300R002C00_Win.zip"/>
+				</result>
+		</package>
+	</packages> 
+	<!-- "自定义任务" --> 	
+	<customTasks>
+
+		
+	</customTasks>
+</ciConfig>
