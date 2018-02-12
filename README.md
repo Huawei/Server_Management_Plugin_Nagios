@@ -6,21 +6,24 @@ nagios plugin for Huawei Device
 
 I. General Information 
 
-    Name:             Management Plugin Pack  for Huawei Device    
+    Name:             Management Plugin Pack  for Huawei Device    
     Category:         Monitoring    
     version :         1.0.3
     
 II. Description
 
-    this is a nagios plugin for monitoring huawei servers 
+    this is a nagios plugin for monitoring huawei servers 
     
 III. Supported Software Version
 
-    nagios core 3.5.1     nagios core 4.3.4      
+    nagios core 3.5.1     nagios core 4.3.4      
     
 IV.Software Requirements
 
-    Python 2.7.13Python 2.7.13    pysnmp-4.2.4.tar.gz    pyasn1-0.1.6.tar.gz    pycrypto-2.3.tar.gz
+    Python 2.7.13Python 2.7.13    
+    pysnmp-4.2.4.tar.gz  
+    pyasn1-0.1.6.tar.gz    
+    pycrypto-2.3.tar.gz
     
 V. Supported Device
     
