@@ -16,7 +16,8 @@ II. Description
     
 III. Supported Software Version
 
-    nagios core 3.5.1     nagios core 4.3.4      
+    nagios core 3.5.1     
+    nagios core 4.3.4      
     
 IV.Software Requirements
 
