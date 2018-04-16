@@ -6,7 +6,7 @@ import os
 import sys
 import constInfo
 import dataInfo
-
+import commands
 '''
 ' 文件操作类异常
 ' handle: 处理文件操作异常信息类, 
@@ -19,10 +19,15 @@ class FileExcept(Exception):
 ' methods: readKey 读取目标文件信息
 ' return: 返回文件信息    
 '''
+def find_nagiosdir():
+    '''return nagios directory'''
+    cmd = "source /etc/profile;echo $NAGIOSHOME"
+    procs = commands.getoutput(cmd)
+    return procs 
 def readKey():
     try:
         # k文件路径
-        kfilepath = '../../etc' + os.path.sep \
+        kfilepath = find_nagiosdir() + os.path.sep +'etc' + os.path.sep \
                        + 'huawei_server' + os.path.sep \
                        + 'configInfo.cfg'
         file = open(kfilepath, constInfo.FILE_R)
@@ -73,9 +78,11 @@ def dencryptKey(pkey, rootkey):
 ' 读取文件信息
 ' methods: genRootKeyStr 读取目标文件信息
 ' return: 返回文件信息    
-'''  
+''' 
+
+
 def genRootKeyStr():
-    configfilepath = '../../etc' + os.path.sep \
+    configfilepath = find_nagiosdir() + os.path.sep +'etc' + os.path.sep \
                        + 'huawei_server' + os.path.sep \
                        + 'initial.cfg'
     parser = ConfigParser.ConfigParser()

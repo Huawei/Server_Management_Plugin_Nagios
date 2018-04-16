@@ -41,7 +41,12 @@ OID_LIST_MEN=[  {"status":"on", "method":"get","oid":"1.3.6.1.4.1.2011.2.235.1.1
                 {"status":"off", "method":"bulk", "name":"presence","oid":"1.3.6.1.4.1.2011.2.235.1.1.16.50.1.6","replace":"1:ok,2:minor,3:major,4:critical,5:absence,6:unknown"},\
                 {"status":"off", "method":"bulk", "name":"devicename","oid":"1.3.6.1.4.1.2011.2.235.1.1.16.50.1.10"},\
                 {"status":"off", "method":"bulk", "name":"state","oid":"1.3.6.1.4.1.2011.2.235.1.1.16.50.1.6","replace":"1:ok,2:minor,3:major,4:critical,5:absence,6:unknown"} ]
-               
+OID_LIST_RAID=[ {"status":"on", "method":"bulk","oid":"1.3.6.1.4.1.2011.2.235.1.1.36.50.1.7"},\
+                {"status":"off", "method":"bulk","name":"present", "oid":"1.3.6.1.4.1.2011.2.235.1.1.36.50.1.16"},\
+                {"status":"off", "method":"bulk","name":"state", "oid":"1.3.6.1.4.1.2011.2.235.1.1.36.50.1.18"},\
+               ]
+
+
 OID_DIC={ "power":OID_LIST_POWER,\
            "cpu" :OID_LIST_CPU,\
            "memory":OID_LIST_MEN,\
@@ -75,48 +80,122 @@ def commandParse():
     parser.add_option("-l","--seclevel", dest="seclevel",
         help="SNMP security level (only with SNMP v3) (noAuthNoPriv|authNoPriv|authPriv)", default="authPriv")
     parser.add_option("-t","--timeout", dest="timeout",
-        help="Timeout in seconds for SNMP", default="10")
+        help="Timeout in seconds for SNMP", default="3")
+    parser.add_option("-r","--retry", dest="retry",
+        help="retry for  SNMP", default="2")        
     (opts,args) = parser.parse_args()
-    compenlist=["power","cpu","memory","fan","system","hardDisk"]
+    compenlist=["power","cpu","memory","fan","system","hardDisk","raid"]
     
     if  opts.host== None :
         print  "please input Hostname or IP "
         exit(STATUS_UNKNOWN)
-    if  opts.user== None :
+    if  opts.version== '3' and  opts.user== None :
         print  "please input SNMP username  "
         exit(STATUS_UNKNOWN)  
     if  opts.ppwd== None :
         opts.ppwd = opts.apwd  
     if not opts.component in compenlist:
-       print  " -c  conly support as : power,cpu,memory,fan,system,hardDisk "  
+       print  " -c  only support as : power,cpu,memory,fan,system,hardDisk,raid "  
        exit(STATUS_UNKNOWN)
-    return opts    
-    
+    return opts       
+
 
 class InfoHandler():
     def __init__(self , parmlist):
         self._Parm = parmlist
+
+    def getRaidStatus(self):
+        _status=STATUS_UNKNOWN 
+        _info=''
+        _ret="1"
+        _output=""
+        _ret,_output=self.snmpWalk(OID_LIST_RAID[0]["oid"])
+        _tempListStatus=[]
+        tmplist=[]
+        if _ret == "0":
+            tmplist=_output.split("\n")
+            for itemTmp in tmplist: 
+                matcher=re.match( ".*=.*:(.*)", itemTmp) 
+                if not matcher == None:
+                    if  matcher.group(1).strip() =="65535":
+                        _tempListStatus.append(STATUS_UNKNOWN)
+                    elif   matcher.group(1).strip() =="0":   
+                        _tempListStatus.append(STATUS_OK)
+                    else:
+                        _tempListStatus.append(STATUS_WARNING)
+                else:
+                    _tempListStatus.append(STATUS_UNKNOWN)
+        _tempListBBUpresent=[]
+        _tempListBBUstatus=[]
+        _ret,_output=self.snmpWalk(OID_LIST_RAID[1]["oid"])
+      
+        if _ret == "0":
+            tmplist=_output.split("\n")
+            for itemTmp in tmplist: 
+                matcher=re.match( ".*=.*:(.*)", itemTmp) 
+                if not matcher == None: 
+                    _tempListBBUpresent.append(matcher.group(1).strip())
+
+        _ret,_output=self.snmpWalk(OID_LIST_RAID[2]["oid"])
+
+        
+        if _ret == "0":
+            tmplist=_output.split("\n")
+            
+            for itemTmp in tmplist: 
+                matcher=re.match( ".*=.*:(.*)", itemTmp) 
+                if not matcher == None: 
+                    
+                    if matcher.group(1).strip() == '0':
+                        _tempListBBUstatus.append(STATUS_OK)
+                    else :
+                        _tempListBBUstatus.append(STATUS_WARNING)   
+        if  _tempListStatus ==[]:
+            _info ="can not  get Raid status ,network error or has no Raid "
+            return  _status ,_info
+
+        if   STATUS_WARNING in _tempListStatus:
+            _status = STATUS_WARNING
+        elif STATUS_OK in _tempListStatus:  
+            _status = STATUS_OK
+        else:
+             _status = STATUS_UNKNOWN
+        if _tempListBBUpresent==[] or  _tempListBBUstatus==[]:
+            _info ="can not get BBU status ,network error or has no Raid "
+            return  _status ,_info
+        else:
+            for i in range(len(_tempListBBUpresent)):
+                #prensented BBU  should display healthstate
+                if _tempListBBUpresent[i] == '2':
+                    _info += 'BBU'+str(i) +' status:'\
+                    + MSG_HEASTATUS[_tempListBBUstatus[i]]+"; "        
+        return  _status ,_info   
+  
+
     def getStatu(self):
-        _statu=STATUS_UNKNOWN
+        _status=STATUS_UNKNOWN
         _infoStr=''
-        if  not self._Parm.component == None:
-             _statu=self.getStatuOid( self._Parm.component)
+        if self._Parm.component.lower() == "raid":
+            _status,_infoStr=self.getRaidStatus()
         else:
-            print "error getStatuOid input None " 
-        if  not self._Parm.component == None:
-             _infoStr=self.getMessageOid(  self._Parm.component)
-        else:
-            print "error getMessageOid input None "             
-        print "=============Result============="
-        print "%s:"%self._Parm.component,_infoStr
-        print "HealthStatus:%s"%MSG_HEASTATUS[_statu]
-        return _statu 
+            if  not self._Parm.component == None:
+                _status=self.getStatuOid( self._Parm.component)
+                _infoStr=self.getMessageOid(  self._Parm.component)
+            else:
+                print "error getStatuOid input None " 
+        print "%s HealthStatus: %s "% ( str(self._Parm.component) ,MSG_HEASTATUS[_status])
+        print "=============================== info ============================="
+        print _infoStr
+       
+        return _status
     def snmpGet(self,oid):
         ret=1
         output=""
-        _comStr="snmpget -u %s -t %s -r 0 -v %s -l %s -a %s -A %s -x %s -X %s %s:%s %s"\
+        if self._Parm.version =='3':
+            _comStr="snmpget -u %s -t %s -r %s -v %s -l %s -a %s -A %s -x %s -X %s %s:%s %s"\
                  %(self._Parm.user\
                  ,self._Parm.timeout\
+                 ,self._Parm.retry\
                  ,self._Parm.version\
                  ,self._Parm.seclevel\
                  ,self._Parm.aprotocol\
@@ -126,14 +205,27 @@ class InfoHandler():
                  ,self._Parm.host\
                  ,self._Parm.port\
                  ,oid)
+        else :         
+            _comStr="snmpget  -t %s -r %s -v %s -c %s  %s:%s %s"\
+                  %(
+                 self._Parm.timeout\
+                 ,self._Parm.retry\
+                 ,self._Parm.version\
+                 ,self._Parm.community\
+                 ,self._Parm.host\
+                 ,self._Parm.port\
+                 ,oid)          
+                         
         ret,output = self.runCommand(_comStr) 
         return ret,output
     def snmpWalk(self,oid):
         _ret="1"
         _output=""
-        _comStr="snmpwalk -u %s -t %s -r 0 -v %s -l %s -a %s -A %s -x %s -X %s %s:%s %s"\
+        if self._Parm.version =='3':
+            _comStr="snmpwalk -u %s -t %s -r %s -v %s -l %s -a %s -A %s -x %s -X %s %s:%s %s"\
                   %(self._Parm.user\
                  ,self._Parm.timeout\
+                 ,self._Parm.retry\
                  ,self._Parm.version\
                  ,self._Parm.seclevel\
                  ,self._Parm.aprotocol\
@@ -143,6 +235,17 @@ class InfoHandler():
                  ,self._Parm.host\
                  ,self._Parm.port\
                  ,oid)
+        else :
+            _comStr="snmpwalk  -t %s -r %s -v %s -c %s  %s:%s %s"\
+                  %(
+                 self._Parm.timeout\
+                 ,self._Parm.retry\
+                 ,self._Parm.version\
+                 ,self._Parm.community\
+                 ,self._Parm.host\
+                 ,self._Parm.port\
+                 ,oid)          
+                         
         _ret,_output = self.runCommand(_comStr)    
         return _ret,_output
     def _repalce(self ,strSrc,repleaseStr):

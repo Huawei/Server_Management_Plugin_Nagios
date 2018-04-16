@@ -94,6 +94,7 @@ import threading
 import logging
 import logging.handlers as handlers
 import ConfigParser
+import commands
 from pysnmp.entity.rfc3413.oneliner.cmdgen import usmHMACMD5AuthProtocol
 from pysnmp.entity.rfc3413.oneliner.cmdgen import usmDESPrivProtocol
 from pysnmp.entity.rfc3413.oneliner.cmdgen import usmHMACSHAAuthProtocol
@@ -211,17 +212,52 @@ class Initialization(object):
         return os.path.dirname(os.path.dirname(curpath)) \
              + os.path.sep \
              + filepath
+    def __find_ckmkVersion(self):
+        '''return nagios directory'''
+        cmd = "source /etc/profile;echo $NAGIOS_CHECKMK_VERSION"
+        procs = commands.getoutput(cmd)
+        return procs 
+    def  getSiteUsrInfo(self):
+        usrFile=self._configdata.Nagiosdir+os.path.sep+"etc/huawei_server/usrFile.cfg"
+        strlist =[]
+        usr ='prod' 
+        group ='prod'
+        file=None 
+        try:
+            file = open(usrFile,"r+")
+            strlist=file.readlines()  
+        except Exception, e :
+            print 'error : open usrFile.cfg error :  '+str(e)
+        finally:
+            if not file  is None:
+                file.close()
+        if (strlist ==[] or strlist==None):
+            return usr ,group      
+        for eachline in strlist:
+            if re.findall(r'.*usr.*=.*', eachline):
+                usr = eachline.split('=')[1]
+            if re.findall(r'.*group.*=.*', eachline):  
+                group =eachline.split('=')[1]   
+        return usr.strip(),group.strip() 
 
     def _checkNagiosTimer(self):
         '''
         ' 检查Nagios主程序是否启动
         '''
-        retVal = os.system(self._configdata.NagiosCheckCmd\
-                           % (self._configdata.Nagiosdir \
+        
+        NagiosbinPath=''
+        if '1_4' in self.__find_ckmkVersion() or   '1_5' in self.__find_ckmkVersion() :
+            usr,group = self.getSiteUsrInfo()
+            NagiosbinPath = "/omd/sites/%s/bin/nagios"%usr
+        else :
+            NagiosbinPath = self._configdata.Nagiosdir \
                               + os.path.sep \
                               + 'bin' \
                               + os.path.sep \
-                              + 'nagios'))
+                              + 'nagios'
+
+        retVal = os.system(self._configdata.NagiosCheckCmd\
+                           % NagiosbinPath)
         if retVal != 0:
             thread.interrupt_main()
         nagiostimer = threading.Timer(self._configdata.NagiosCheckInterval, \
@@ -264,6 +300,7 @@ class Initialization(object):
                 for agentip, hostdic in self._configdata.Hostdata.items():
                     # 当HOST_CFG_KEY_MODEL为None，标识无法获取设备型号
                     # 当HOST_CFG_KEY_ISSUCCESS为False，标识无法设置设备trap信息
+                    self._configdata._addType2HostCfgWithSNMP(hostdic)
                     if hostdic[HOST_CFG_KEY_MODEL] is None \
                             or hostdic[HOST_CFG_KEY_ISSUCCESS] == False:
                         logger.info("type of "+ str(agentip) + " is null or failure of trap ip !")
@@ -784,7 +821,7 @@ class ConfigData(object):
         if key is not None :
             return key
         else:
-            return constInfo.DATA_KEYS
+            return constInfo.DATA_CONS
     
     def genRootKeyStr(self):
         configfilepath = self._nagiosdir + '/etc' + os.path.sep \
@@ -1205,8 +1242,6 @@ class ConfigException(Exception):
     ' 配置异常
     '''
     pass
-
-
 
 if __name__ == '__main__':
     Initialization().start()

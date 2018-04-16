@@ -4,12 +4,16 @@ import os
 import sys
 import time
 import datetime
+import commands
+import re
 
 from xml.etree import ElementTree
 
 sys.path.append("..")
 from base.logger import Logger
 from constant.constant import *
+
+
 
 class Common:
     _logger = Logger.getInstance()
@@ -33,11 +37,19 @@ class Common:
     @classmethod
     def getVarPath(cls):
         return os.path.dirname(cls.getBinPath()) + os.path.sep + "var" + os.path.sep;
-
+ 
     #获取nagios cmd路径
     @classmethod
     def getNagiosCmdPath(cls):
-        return cls.getVarPath() + os.path.sep + "rw" + os.path.sep + "nagios.cmd";
+        nagioscmd_file =''
+        initial_cfg = open(os.path.dirname(cls.getBinPath()) + os.path.sep + "etc" + os.path.sep+"huawei_server/initial.cfg")
+        for pro in initial_cfg:
+            if re.findall(r'^\s*nagios_cmd_file\s*=\s*/', pro):
+                nagioscmd_file= re.sub(r'\s*$','',pro.split('=')[1])  
+        if  not  nagioscmd_file == None:     
+            return nagioscmd_file
+        else :
+            return ''    
     
 
     #获取插件配置文件路径

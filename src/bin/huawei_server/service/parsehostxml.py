@@ -159,7 +159,7 @@ class ParseHostXml:
     
      
     @classmethod
-    def __readKey(self):
+    def __readKey(cls):
         try:
             
             kfilepath = Common.getEtcPath() + 'huawei_server' + os.path.sep + 'configInfo.cfg'
@@ -177,7 +177,7 @@ class ParseHostXml:
         if key is not None :
             return key
         else:
-            return constInfo.DATA_KEYS
+            return constInfo.DATA_CONS
     
     @classmethod
     def __genRootKeyStr(cls):

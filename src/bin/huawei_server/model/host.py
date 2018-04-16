@@ -77,12 +77,6 @@ class Host:
     def getEncryptionProtocol(self):
         return self._encryptionProtocol;
     
-    def setCollectVersion(self, collectVersion):
-        self._collectVersion = collectVersion;
-
-    def getCollectVersion(self):
-        return self._collectVersion;
-    
     def setCollectCommunity(self, collectCommunity):
         self._collectCommunity = collectCommunity;
 

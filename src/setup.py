@@ -10,18 +10,58 @@ import os
 import re
 import shutil
 import sys
+import commands
 
-
+G_CMK_USER='prod'
+G_CMK_GROUP='prod'
+G_NAGIOS_USER='nagios'
+G_NAGIOS_GROUP='nagios'
 this_file = inspect.getfile(inspect.currentframe())
 file_dir, file_name = os.path.split(this_file)
 if file_dir == '' :
     file_dir = os.getcwd()
+usrFile=file_dir+os.path.sep+'usrFile.cfg'
+
+def getUsrInfo():
+    strlist =[]
+    usr ='prod' 
+    group ='prod'
+    file=None 
+    try:
+        file = open(usrFile,"r+")
+        strlist=file.readlines()  
+    except Exception, e :
+        print 'error : open usrFile.cfg error :  '+str(e)
+    finally:
+        if not file  is None:
+            file.close()
+    if (strlist ==[] or strlist==None):
+        return usr ,group      
+    for eachline in strlist:
+        if re.findall(r'usr.*=.*', eachline):
+            usr = eachline.split('=')[1]
+        if re.findall(r'group.*=.*', eachline):  
+            group =eachline.split('=')[1]   
+    return usr.strip(),group.strip()
+
+def getNagiosUserinfo():
+    list = commands.getoutput( "ls -l /usr/local/nagios ")
+    infolist = list.split('\n')[1].split()
+    usr= infolist[2]
+    group=infolist[3]
+    return usr, group 
+        
 
 '''
 ==================================
 日志
 ==================================
 '''
+
+##兼容的check mk 版本
+CHECK_MK_VERSION_LIST=["1_2","1_5","1_4"]
+
+
 class Log:
     '''
     '日志级别：warn，info, debug
@@ -122,6 +162,64 @@ class CheckCfgTask:
         return os.system(command)
 
 
+#store ckMKVersion 
+class CKmkVersion():
+    __ckmkVersion = '' 
+
+    @classmethod     
+    def setckmkVersion(cls,version):
+        cls.__ckmkVersion = version
+    @classmethod     
+    def getckmkVersion(cls): 
+        return cls.__ckmkVersion
+    @classmethod    
+    def find_ckmkVersion(cls):
+        '''return nagios directory'''
+        cmd = "source /etc/profile;echo $NAGIOS_CHECKMK_VERSION"
+        procs = commands.getoutput(cmd)
+        return procs  
+def find_nagiosdir():
+        '''return nagios directory'''
+        cmd = "source /etc/profile;echo $NAGIOSHOME"
+        procs = commands.getoutput(cmd)
+        return procs 
+         
+def delckmkVersionToprofile(): 
+    FilePath="/etc/profile"
+    strforconfig="export NAGIOS_CHECKMK_VERSION"
+    file=None
+    try:
+        file = open(FilePath,"r+")
+        strlist=file.readlines()
+        file.close()    
+        #had configed so exit          
+        for i in range(len(strlist)):
+            if strforconfig in str(strlist[i]):
+                del strlist[i]
+                break 
+        #cofnig   nagios.cfg 
+        file=open(FilePath,"w")       
+        file.writelines(strlist)  
+    except Exception,err:
+        print  "delNagiosHomeToprofile exception info :" + str(err)  
+    finally:
+        if file is not None:
+            file.close()      
+def addckmkVersionToprofile():
+    FilePath="/etc/profile"
+    strforconfig="export NAGIOS_CHECKMK_VERSION="
+    file=None
+    delckmkVersionToprofile()
+    try:
+        file = open(FilePath,"r+")
+        strlist=file.readlines()  
+        file.writelines(strforconfig+( "%s"% CKmkVersion.getckmkVersion() ) +"\n") 
+        
+    except Exception,err:
+        print  "addckmkVersionToprofile exception info :" + str(err)  
+    finally:
+        if file is not None:
+            file.close() 
 
 '''
 '==================================
@@ -216,7 +314,7 @@ class FileMrg:
     '''
     '移动文件
     '''
-    def copyFile(self, filesouce, filetarget):
+    def copyFile(self, filesouce, filetarget):   
         if os.path.isfile(filesouce) and self.excludeFile(filetarget+os.path.sep+os.path.basename(filesouce)):
             shutil.copy2(filesouce , os.path.join(filetarget))
         elif os.path.isdir(filesouce):
@@ -341,12 +439,15 @@ class TargetPath(object):
     NAGIOS_CMD = ''
 
     def nagios_cmd(self):
+        if CKmkVersion.getckmkVersion() == '1_4'or CKmkVersion.getckmkVersion() == '1_5':
+            return "/omd/sites/%s/tmp/run/nagios.cmd"%G_CMK_USER
         return self.NAGIOS_CMD or '%s/rw/nagios.cmd' % self.nagios_var()
     '''
     'nagios缓存目录
     'update 2013-4-8
     '''
     NAGIOS_CACHE_PATH = ''
+
 
     def nagios_cache_path(self):
         return self.NAGIOS_CACHE_PATH or '%s/huawei_server' % self.nagios_var()
@@ -467,6 +568,8 @@ LOG = Log('setup.py')
 '路径的正确
 '''
 def checkpath():
+    if '1_4' in CKmkVersion.getckmkVersion() or  '1_5' in CKmkVersion.getckmkVersion():
+        return True
     if(
        not checkCfgTask.checkPath(targetPath.NAGIOS_HOME)
        or not checkCfgTask.checkPath(targetPath().nagios_bin()) 
@@ -487,10 +590,26 @@ def checkpath():
             os.makedirs(targetPath().nagios_cache_path(), 0775)
         return True
  
+
+def createPluginDir():
+    if not os.path.isdir (targetPath.NAGIOS_HOME):
+        os.mkdir(targetPath.NAGIOS_HOME)
+    if  not os.path.isdir (targetPath().nagios_etc()):
+        os.mkdir(targetPath().nagios_etc())
+    if  not os.path.isdir (targetPath().nagios_libexec()):
+        os.mkdir(targetPath().nagios_libexec())
+    if  not os.path.isdir (targetPath().nagios_bin()):
+        os.mkdir(targetPath().nagios_bin())
+    if  not os.path.isdir (targetPath().nagios_var()):
+        os.mkdir(targetPath().nagios_var())  
+    if  not os.path.isdir (targetPath().nagios_var()+"/"+"huawei_server"):
+        os.mkdir(targetPath().nagios_var()+"/"+"huawei_server")      
+
 '''
 '移动python脚本至指定位
-'''   
+'''           
 def moveFile():
+    createPluginDir()
     LOG.info('moveFile begin.')
     fileMrg.copyFile(targetPath.CURR_PATH + os.path.sep + 'bin' + os.path.sep + 'huawei_server' , targetPath().nagios_bin())
     fileMrg.copyFile(targetPath.CURR_PATH + os.path.sep + 'etc' + os.path.sep + 'huawei_server' , targetPath().nagios_etc())
@@ -511,17 +630,59 @@ def removeFile(isSaveData):
 '''
 '修改nagios配置文件 
 '''
-def editFile():
-    LOG.info('editFile begin.')
-#   修改cgi.cfg
-    cfgEid2 = True
-    
-    cgiCfgPt = 'escape_html_tags='
-    cgiCfg = 'escape_html_tags=0'
-    ptCgiCfg = r'^\s*escape_html_tags=\s*\d\s*$'
-    cfgEid3 = fileMrg.readEditFile(targetPath().nagios_cgi_config(), cgiCfg, cgiCfgPt, ptCgiCfg)
-    LOG.info('editFile end.')
-    return True and cfgEid1 and cfgEid2 and cfgEid3
+def delInfoInNagiosSourceFile(): 
+    nagioshome = targetPath.NAGIOS_HOME
+    if '1_4' in CKmkVersion.getckmkVersion() or  '1_5' in CKmkVersion.getckmkVersion(): 
+        FilePath="/omd/sites/%s/etc/nagios/resource.cfg"%(G_CMK_USER)
+    else:
+        FilePath= SourceFile=nagioshome+os.path.sep +"etc"+os.path.sep+"resource.cfg"
+    strforconfig="$USER5$=%s/libexec\n"%nagioshome 
+    file=None
+    try:
+        file = open(FilePath,"r+")
+        strlist=file.readlines()
+        file.close()    
+        #had configed so exit          
+        for i in range(len(strlist)):
+            if strforconfig in str(strlist[i]):
+                del strlist[i]
+                break 
+        #cofnig   nagios.cfg 
+        file=open(FilePath,"w")       
+        file.writelines(strlist)  
+    except Exception,err:
+        print  "delInfoInNagiosSourceFile exception info :" + str(err)  
+    finally:
+        if file is not None:
+            file.close()
+def delInfoInNagiosCfg(): 
+    nagioshome = targetPath.NAGIOS_HOME
+    if '1_4' in CKmkVersion.getckmkVersion() or  '1_5' in CKmkVersion.getckmkVersion(): 
+        FilePath="/omd/sites/%s/etc/nagios/nagios.cfg"%(G_CMK_USER)
+        strforconfig="precached_object_file=%s"%nagioshome+os.path.sep+"etc"+os.path.sep+"huawei_server"+os.path.sep+"hw_server.cfg\n"
+    else:
+        FilePath=nagioshome+os.path.sep +"etc"+os.path.sep+"nagios.cfg"   
+        strforconfig="cfg_file=%s"%nagioshome+os.path.sep+"etc"+os.path.sep+"huawei_server"+os.path.sep+"hw_server.cfg\n"
+    file=None
+    try:
+        file = open(FilePath,"r+")
+        strlist=file.readlines()
+        file.close()    
+        #had configed so exit          
+        for i in range(len(strlist)):
+            if strforconfig in str(strlist[i]):
+                del strlist[i]
+                break 
+        #cofnig   nagios.cfg 
+        file=open(FilePath,"w")       
+        file.writelines(strlist)  
+    except Exception,err:
+        print  "delInfoInNagiosCfg exception info :" + str(err)  
+    finally:
+        if file is not None:
+            file.close()
+
+
 
 def reEditFile():
     LOG.info('revert file begin.')
@@ -589,13 +750,18 @@ def trapdcheck():
 trapdNum=NULL
 function getTrapdNum()
 {
-     trapdNum=`ps -efww | grep trapd.py | grep -v grep | awk '{print $2}'`
+     trapdNum=`ps -efww | grep trapd.py|grep python | grep -v grep | awk '{print $2}'`
 }
 
 collectNum=NULL
 function getCollectNum()
 {
-     collectNum=`ps -efww | grep collect.py | grep -v grep | awk '{print $2}'`
+     collectNum=`ps -efww | grep collect.py|grep python | grep -v grep | awk '{print $2}'`
+}
+CollectbyCfgNum=NULL
+function getCollectbyCfgNum()
+{
+     CollectbyCfgNum=`ps -efww | grep collectInfoByCfg.py|grep python | grep -v grep | awk '{print $2}'`
 }
 
 function kill()
@@ -606,7 +772,7 @@ function kill()
 
 function startTrapd()
 {
-    su - nagios
+
     cd `dirname $0`
     nohup python '''+targetPath().nagios_bin()+os.path.sep+'''huawei_server'''+os.path.sep+'''trapd.py > /dev/null 2>&1 &
 }
@@ -614,10 +780,19 @@ function startTrapd()
 
 function startCollect()
 {
-    su - nagios
+
     cd `dirname $0`
     nohup python '''+targetPath().nagios_bin()+os.path.sep+'''huawei_server'''+os.path.sep+'''collect.py -p > /dev/null 2>&1 &
 }
+
+function startCollectByCfg()
+{
+
+    cd `dirname $0`
+    nohup python '''+targetPath().nagios_bin()+os.path.sep+'''huawei_server'''+os.path.sep+'''collectInfoByCfg.py -p > /dev/null 2>&1 &
+}
+
+
 
 function trapdcheck()
 {
@@ -631,11 +806,17 @@ function trapdcheck()
         startCollect
     fi
     
+    getCollectbyCfgNum
+    if [ -e $CollectbyCfgNum ]; then
+        startCollectByCfg
+    fi
+
     echo "OK"
     exit 0
 }
 source /etc/profile
 export PATH="%s:$PATH"
+export PYTHONPATH=''
 trapdcheck
 '''%PythonExcutePath
     fileMrg.createFile(targetPath.CURR_PATH + '/libexec/huawei_server', 'trapdcheck.sh', trapdcheck, 'w')
@@ -672,30 +853,9 @@ def encrypt(str):
 
 def insertSerCfg():
     pass
-    
-def addNagiosHomeToprofile():
-    FilePath="/etc/profile"
-    strforconfig="export NAGIOSHOME=%s"%targetPath.NAGIOS_HOME
-    file=None
-    try:
-        file = open(FilePath,"r+")
-        strlist=file.readlines()  
-        #had configed so exit             
-        for i in range(len(strlist)):
-            if strforconfig in str(strlist[i]):
-                 return
-        #cofnig   nagios.cfg  
-        file.writelines(strforconfig+"\n") 
-        
-    except Exception,err:
-        print  "addNagiosHomeToprofile exception info :" + str(err)  
-    finally:
-        if file is not None:
-            file.close()  
-            
 def delNagiosHomeToprofile(): 
     FilePath="/etc/profile"
-    strforconfig="export NAGIOSHOME=%s"%targetPath.NAGIOS_HOME
+    strforconfig="export NAGIOSHOME="
     file=None
     try:
         file = open(FilePath,"r+")
@@ -713,8 +873,36 @@ def delNagiosHomeToprofile():
         print  "delNagiosHomeToprofile exception info :" + str(err)  
     finally:
         if file is not None:
+            file.close()      
+def addNagiosHomeToprofile():
+    FilePath="/etc/profile"
+    strforconfig="export NAGIOSHOME=%s"%targetPath.NAGIOS_HOME
+    file=None
+    delNagiosHomeToprofile()
+    try:
+        file = open(FilePath,"r+")
+        strlist=file.readlines()  
+ 
+        file.writelines(strforconfig+"\n") 
+        
+    except Exception,err:
+        print  "addNagiosHomeToprofile exception info :" + str(err)  
+    finally:
+        if file is not None:
             file.close()  
+#add config in nagios 
+def reuseConfigfile():           
+    cfgfile= targetPath().nagios_hw_ser_cfg()
+    configBinPath=targetPath().nagios_bin()+"/huawei_server/config.py "
+    if os.path.isfile(cfgfile):
+        tmpcmd="python %s update"%configBinPath
+        os.system(tmpcmd) 
+
 def install():
+    
+    #clear env before install
+    os.system("trapdNum=`ps -ef | grep trapd.py|grep python | grep -v grep | awk '{print $2}'` && if [ ! -e $trapdNum ]; then kill -9 $trapdNum; fi")
+    os.system("collectNum=`ps -ef | grep collect.py|grep python | grep -v grep | awk '{print $2}'` && if [ ! -e $collectNum ]; then kill -9 $collectNum; fi")
     
     if ("__main__" == __name__) and checkpath() :
         if checkCfgTask.checkPathNot(targetPath().nagios_bin() + "/huawei_server/trapd.py") :
@@ -743,6 +931,7 @@ def install():
         '''
         '移动python脚本至指定位
         '''
+        
         moveFile()
         os.system("chmod  -R 700 "+targetPath().nagios_var()+os.path.sep+"huawei_server")
         os.system("chmod  -R 700 "+targetPath().nagios_bin()+os.path.sep+"huawei_server")
@@ -760,63 +949,63 @@ def install():
         
         os.system("chmod  600 "+targetPath().nagios_bin()+os.path.sep+"huawei_server"+os.path.sep+"constInfo.py")
         os.system("chmod  600 "+targetPath().nagios_bin()+os.path.sep+"huawei_server"+os.path.sep+"dataInfo.py")
-        
-        os.system("chown -R nagios:nagios "+targetPath().nagios_bin()+os.path.sep+"huawei_server")
-        os.system("chown -R nagios:nagios "+targetPath().nagios_etc()+os.path.sep+"huawei_server")
-        os.system("chown -R nagios:nagios "+targetPath().nagios_libexec()+os.path.sep+"huawei_server")
-        os.system("chown -R nagios:nagios "+targetPath().nagios_var()+os.path.sep+"huawei_server")
+        if CKmkVersion.getckmkVersion() == '1_4'or CKmkVersion.getckmkVersion() == '1_5':
+            _currenPath =os.getcwd()  
+            copyusrfilecmd="cp  '%s'/usrFile.cfg '%s'"%(_currenPath,targetPath().nagios_etc()+os.path.sep+"huawei_server")
+            os.system (copyusrfilecmd)
+            os.system("chown -R %s:%s %s"%( G_CMK_USER,G_CMK_GROUP, targetPath.NAGIOS_HOME) )
+            
+        else:
+            os.system("chown -R %s:%s "%(G_NAGIOS_USER,G_NAGIOS_GROUP)+targetPath().nagios_bin()+os.path.sep+"huawei_server")
+            os.system("chown -R %s:%s "%(G_NAGIOS_USER,G_NAGIOS_GROUP)+targetPath().nagios_etc()+os.path.sep+"huawei_server")
+            os.system("chown -R %s:%s "%(G_NAGIOS_USER,G_NAGIOS_GROUP)+targetPath().nagios_libexec()+os.path.sep+"huawei_server")
+            os.system("chown -R %s:%s "%(G_NAGIOS_USER,G_NAGIOS_GROUP)+targetPath().nagios_var()+os.path.sep+"huawei_server")
         #set ENV 
         addNagiosHomeToprofile()
+        addckmkVersionToprofile()
+        reuseConfigfile()
 
 
-def uninstall():
-    #获得安装时的路径
-    initial_cfg = open(targetPath.CURR_PATH + '/etc/huawei_server/initial.cfg')
-    '''
-    'nagios_dir
-    'nagios_cmd_file
-    'cache_path
-    '''
-    for pro in initial_cfg:
-        if re.findall(r'^\s*nagios_dir\s*=\s*/', pro):
-            targetPath.NAGIOS_HOME = re.sub(r'\s*$','',pro.split('=')[1])
-        elif re.findall(r'^\s*nagios_cmd_file\s*=\s*/', pro):
-            targetPath.NAGIOS_CMD = re.sub(r'\s*$','',pro.split('=')[1])
-        elif re.findall(r'^\s*cache_path\s*=\s*/', pro):
-            targetPath.NAGIOS_CACHE_PATH = re.sub(r'\s*$','',pro.split('=')[1])
-    #set ENV 
+def uninstall(isRetain):
+    # 
+    if isRetain.upper() == 'YES':
+        isSaveData = True
+    else :
+        isSaveData = False   
+
     delNagiosHomeToprofile()
+    delckmkVersionToprofile()
     
     if checkpath() :
-        isSaveData = True
-        while True:
-            #希望保留用户数据
-            isY = raw_input("Do you want to retain user data?(Y/N)")
-            if isY == 'Y' or isY == 'N' or isY == 'y' or isY == 'n' :
-                break;
-            #你输入的选项不正确,请重新选择
-            LOG.info("The option you selected is incorrect. Please reselect.");
         
-        os.system("trapdNum=`ps -ef | grep trapd.py | grep -v grep | awk '{print $2}'` && if [ ! -e $trapdNum ]; then kill -9 $trapdNum; fi")
-        os.system("collectNum=`ps -ef | grep collect.py | grep -v grep | awk '{print $2}'` && if [ ! -e $collectNum ]; then kill -9 $collectNum; fi")
-                
-        if isY == 'N' or isY == 'n':
-            isSaveData = False
+       
+        os.system("trapdNum=`ps -ef | grep trapd.py |grep python| grep -v grep | awk '{print $2}'` && if [ ! -e $trapdNum ]; then kill -9 $trapdNum; fi")
+        os.system("collectNum=`ps -ef | grep collect.py|grep python | grep -v grep | awk '{print $2}'` && if [ ! -e $collectNum ]; then kill -9 $collectNum; fi")
+            
         removeFile(isSaveData)
         reEditFile()
+        delInfoInNagiosCfg()
+        delInfoInNagiosSourceFile()
         
         '''
         '重启nagios服务
         '''    
-        os.system("service nagios restart")
-             
+        if '1_4' in CKmkVersion.getckmkVersion() or  '1_5' in CKmkVersion.getckmkVersion(): 
+            os.system("omd restart")
+        else:     
+            os.system("service nagios restart")
+                    
         
 def main():
+    global G_NAGIOS_USER
+    global G_NAGIOS_GROUP
+    global G_CMK_USER
+    global G_CMK_GROUP
     InitUserCfg().initCfg()
 
     MSG_USAGE = '''\n    %prog install -d LOCAL_ADDRESS [-p LISTEN_PORT] -n NAGIOS_DIR \
                    \nor\
-                   \n    %prog uninstall
+                   \n    %prog uninstall  -n NAGIOS_DIR 
                 '''
     optParser = OptionParser(MSG_USAGE)
     optParser.add_option("-d", "--local_address", action="store"
@@ -832,13 +1021,44 @@ def main():
                          , dest="nagios_dir"
                          , help="Nagios home directory (mandatory).         "
                          + "Example:/usr/local/nagios")
-    
+    optParser.add_option("-m", "--checkMKVersion", action="store"
+                         , dest="checkMKVersion"
+                         , help="assign checkMK version "
+                         + "Example:1_4 for checkMK1.4 ")
+    optParser.add_option("-s", "--retain", action="store"
+                         , dest="retain"
+                         , help="retain user date  yes for save date "
+                         + "Example: 'yes', 'no' ")                     
     
     options, args = optParser.parse_args()
+
+    #verify -m  
+    if not options.checkMKVersion is None:
+        if  not options.checkMKVersion  in CHECK_MK_VERSION_LIST:
+            print "-m only suport as follow:"
+            for vesionitem in CHECK_MK_VERSION_LIST:
+                print vesionitem
+
     if len(args) == 1 and (args[0] == 'install' or  args[0] == 'uninstall'):
         if args[0] == 'uninstall':
-            try:
-                uninstall();
+            if options.nagios_dir is None:
+                print "please input nagios dir "
+                exit()
+            if not options.checkMKVersion is None:
+                CKmkVersion.setckmkVersion(options.checkMKVersion)
+            else: 
+                CKmkVersion.setckmkVersion(CKmkVersion.find_ckmkVersion())
+            try :  
+                if '1_4' in CKmkVersion.getckmkVersion() or  '1_5' in CKmkVersion.getckmkVersion(): 
+                    targetPath.NAGIOS_HOME= re.sub(r'[/|\\]*$', '', options.nagios_dir)+"/"+"nagiosPlugInForHuawei"  
+                    G_CMK_USER,G_CMK_GROUP = getUsrInfo()
+                else :  
+                    G_NAGIOS_USER,G_NAGIOS_GROUP = getNagiosUserinfo()  
+                    targetPath.NAGIOS_HOME= re.sub(r'[/|\\]*$', '', options.nagios_dir)
+                if  options.retain is not None:   
+                    uninstall(options.retain)
+                else :
+                    uninstall('no')  
             except HelpExcept:
                 optParser.print_help()
             except InstallExcept, exc:
@@ -847,30 +1067,36 @@ def main():
             else:
                 LOG.info('uninstall success.');
                 print 'Done.'
-        elif options.local_address is not None and options.nagios_dir is not None:
-            try:
-                checkip(options.local_address)
-                targetPath.NAGIOS_LOCAL_ADDRESS = options.local_address
-                targetPath.NAGIOS_HOME = re.sub(r'[/|\\]*$', '', options.nagios_dir)
+        elif  args[0] == 'install':
+            if options.local_address is not None and options.nagios_dir is not None:
+                try:
+                    checkip(options.local_address)
+                    targetPath.NAGIOS_LOCAL_ADDRESS = options.local_address
+                    targetPath.NAGIOS_HOME = re.sub(r'[/|\\]*$', '', options.nagios_dir)
+                    
+                    if None != options.listen_port :
+                        targetPath.NAGIOS_LISTEN_PORT = options.listen_port
+                    if not options.checkMKVersion is None:
+                        CKmkVersion.setckmkVersion(options.checkMKVersion)
+                        if '1_4' in options.checkMKVersion or  '1_5' in options.checkMKVersion:
+                            G_CMK_USER,G_CMK_GROUP = getUsrInfo()
+                            targetPath.NAGIOS_HOME = re.sub(r'[/|\\]*$', '', options.nagios_dir)+"/"+"nagiosPlugInForHuawei"   
+                        else:
+                           
+                            G_NAGIOS_USER,G_NAGIOS_GROUP = getNagiosUserinfo()     
+                    install()
 
-                if None != options.listen_port :
-                    targetPath.NAGIOS_LISTEN_PORT = options.listen_port
-
-                print install
-                install()
-                pass
-            except HelpExcept:
-                optParser.print_help()
-            except InstallExcept, exc:
-                LOG.error(str(exc.message) + 'install fail.')
-                print 'Done.'
-            else:
-                LOG.info('install success.')
-                print 'Done.'
-                
+                except HelpExcept:
+                    optParser.print_help()
+                except InstallExcept, exc:
+                    LOG.error(str(exc.message) + 'install fail.')
+                    print 'Done.'
+                else:
+                    LOG.info('install success.')
+                    print 'Done.'     
         else:
             optParser.print_help()
-    else :
+    else:
         optParser.print_help()
     
 

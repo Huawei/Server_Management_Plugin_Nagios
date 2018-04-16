@@ -3,7 +3,7 @@
 
 ############## PLUGIN VERSION ###########################
 
-VERSTION_STR ="HUAWEI PLUGIN V1.0.3" 
+VERSTION_STR ="HUAWEI PLUGIN V1.0.4" 
 ################################################
 '''
 Created on 2018-1-18
@@ -75,7 +75,8 @@ NAME_FUNTION_DEL="DEL"
 NAME_FUNTION_INQUIRY="INQUIRY"
 NAME_FUNTION_VERSION="VERSION" 
 NAME_FUNTION_RESETSERVER="RESETSERVER"
-CMD_LIST=[NAME_FUNTION_ADD,NAME_FUNTION_BATCH,NAME_FUNTION_DEL,NAME_FUNTION_INQUIRY,NAME_FUNTION_VERSION,NAME_FUNTION_RESETSERVER]
+NAME_FUNTION_UPDATE="UPDATE"
+CMD_LIST=[NAME_FUNTION_ADD,NAME_FUNTION_BATCH,NAME_FUNTION_DEL,NAME_FUNTION_INQUIRY,NAME_FUNTION_VERSION,NAME_FUNTION_RESETSERVER,NAME_FUNTION_UPDATE]
 #-------------------------funtion cmd-------------------------------------     
 #+++++++++++++const for xml parse  ++++++++++++++++++++++++++++
 HOST_CFG_KEY_DEVICETYPE = 'devicetype'
@@ -137,6 +138,7 @@ def main():
                     del  %prog del -i IPADDRESS [] ..
                     inquiry   %prog inquiry
                     version %prog version
+                    update %prog update
                     resetserver %prog resetserver -i IPADDRESS [] ..                  
                 '''
     optParser = OptionParser(MSG_USAGE)
@@ -399,10 +401,54 @@ class ConfigHandler():
         self.__localip=""
         self.CofnigServer=False
         self.__OidDic={}
+        self.__chechmkVersion=self.__find_ckmkVersion()
         self._nagiosHomeDir=self.__find_nagiosdir()
         self.__pareHostFile()
         self.__PareInitFile()
         self.__ParePluginFile()
+        self._cmkuser="prod"
+        self._cmkgroup="prod"
+        self._nagiosuser='nagios'
+        self._nagiosgroup='nagios'
+        if self.__chechmkVersion=='1_4' or  self.__chechmkVersion=='1_5':
+            self._cmkuser,self._cmkgroup = self.getUsrInfo()
+        else :
+            self._nagiosuser,self._nagiosgroup=self.getNagiosUserinfo()
+
+    def getNagiosUserinfo(self): 
+        try:
+            list = commands.getoutput( "ls -l /usr/local/nagios ")
+            infolist = list.split('\n')[1].split()
+            usr= infolist[2]
+            group=infolist[3]
+            return usr,group
+        except Exception ,err :
+            print "get getNagiosUserinfo error Exception: " ,str( err) 
+            return "nagios", "nagios" 
+
+    def  getUsrInfo(self):
+        usrFile=self._nagiosHomeDir+os.path.sep+"etc/huawei_server/usrFile.cfg"
+        strlist =[]
+        usr ='prod' 
+        group ='prod'
+        file=None 
+        try:
+            file = open(usrFile,"r+")
+            strlist=file.readlines()  
+        except Exception, e :
+            print 'error : open usrFile.cfg error :  '+str(e)
+        finally:
+            if not file  is None:
+                file.close()
+        if (strlist ==[] or strlist==None):
+            return usr ,group      
+        for eachline in strlist:
+            if re.findall(r'.*usr.*=.*', eachline):
+                usr = eachline.split('=')[1]
+            if re.findall(r'.*group.*=.*', eachline):  
+                group =eachline.split('=')[1]   
+        return usr.strip(),group.strip()    
+
     def __ParePluginFile(self):
         _etcPath=self.__getCfgPath()
         filePath=_etcPath+ os.path.sep + "huawei_plugin.cfg" 
@@ -560,11 +606,13 @@ class ConfigHandler():
                     NAME_FUNTION_DEL:self.funDel,
                     NAME_FUNTION_INQUIRY:self.funInquiry,
                     NAME_FUNTION_VERSION:self.funVersion, 
-                    NAME_FUNTION_RESETSERVER:self.funReSetServer,                    
+                    NAME_FUNTION_RESETSERVER:self.funReSetServer,
+                    NAME_FUNTION_UPDATE:self.funUpdate,                   
                 }   
         try :                
             _funDis[ self.__parm["fun"].upper()]()            
             self.creatConfigfile()
+            
             if self.CofnigServer is True:
                 self.funSetServer()
             self.addPlugincfgInNagios()
@@ -573,7 +621,15 @@ class ConfigHandler():
             print " please check IP "
         except Exception,err:
             print " mainHandler Exception  error info:" , str(err)     
-    # set server ip ,port ,snmp config for trap         
+    #update config 
+    def funUpdate(self):
+        #need to creat config file againt ,
+        # maybethe old file cant usr in new version 
+        self.creatConfigfile()
+        self.addPlugincfgInNagios()
+        self.restartNagios()
+
+    # set server ip ,port ,snmp config for trap        
     def funSetServer (self): 
         print "start set Server Trap config"
         ret =None
@@ -1003,6 +1059,67 @@ class ConfigHandler():
         output = commands.getoutput("cat /tmp/huaweitmp.cfg")
         commands.getoutput("rm -rf /tmp/huaweitmp.cfg")
         return output
+    def __getObjContent(self, ipaddress,hostdic,objName):
+        _etcPath=self.__getCfgPath()
+        if not  hostdic[CFG_NODE_KEY_HOST_NAME] is None:
+            hostname =  hostdic[CFG_NODE_KEY_HOST_NAME] 
+        else :
+            hostname =  ipaddress   
+        
+        cmdName = objName+"_"+hostname+"_cmd"
+
+        if hostdic[CFG_NODE_KEY_CSNMPVERSION].upper() == 'V3':
+            cmdLind = "python $USER5$/huawei_server/%s -H %s -v 3 -u %s -a %s -A %s -x %s -X %s -c %s -T %s -p %s $"% (
+                        "getInfoWithEncrypt.py"\
+                        ,ipaddress\
+                        ,hostdic[CFG_NODE_KEY_CUSER] \
+                        ,hostdic[CFG_NODE_KEY_CAUTH]\
+                        ,self.encrypt(hostdic[CFG_NODE_KEY_CPWD]) \
+                        ,hostdic[CFG_NODE_KEY_CPRIV]\
+                        ,self.encrypt(hostdic[CFG_NODE_KEY_CPWD]) \
+                        ,objName\
+                        ,hostdic[CFG_NODE_KEY_DEVTYPE]
+                        ,hostdic[CFG_NODE_KEY_PPORT]  )
+        else:
+            if hostdic[CFG_NODE_KEY_CSNMPVERSION].upper() == 'V2':
+                versionStr = '2c'
+            else :
+                versionStr = '1'       
+            cmdLind = "python $USER5$/huawei_server/%s -H %s -v %s -C %s -c %s -T %s -p %s $"% ( \
+                "getInfoWithEncrypt.py"\
+                ,ipaddress\
+                ,versionStr\
+                ,self.encrypt(hostdic[CFG_NODE_KEY_CCNMTY])\
+                ,objName \
+                ,hostdic[CFG_NODE_KEY_DEVTYPE] 
+                ,hostdic[CFG_NODE_KEY_PPORT])
+           
+        commands.getoutput("cat " + _etcPath+ os.path.sep  + "objModle.cfg > /tmp/huaweitmp.cfg")
+        if hostname: 
+            commands.getoutput("sed -i 's/hostname/" + hostname + "/g' /tmp/huaweitmp.cfg")
+        if cmdName: 
+            commands.getoutput("sed -i 's/commandName/" + cmdName + "/g' /tmp/huaweitmp.cfg")
+        if objName: 
+            commands.getoutput("sed -i 's/serveiceName/" + objName + "/g' /tmp/huaweitmp.cfg")
+        # blade collect info use passive module
+        if  objName.lower() != 'raid':
+            commands.getoutput("sed -i 's/active_enable/0" + "/g' /tmp/huaweitmp.cfg")
+            commands.getoutput("sed -i 's/passive_eanble/1" + "/g' /tmp/huaweitmp.cfg")
+        else:   
+            commands.getoutput("sed -i 's/active_enable/1" + "/g' /tmp/huaweitmp.cfg")
+            commands.getoutput("sed -i 's/passive_eanble/0" + "/g' /tmp/huaweitmp.cfg")
+        comstr='''
+define command{ 
+    command_name                %s
+    command_line                %s
+}
+
+        '''% (cmdName,cmdLind)
+        output = commands.getoutput("cat /tmp/huaweitmp.cfg")
+        output += comstr
+        commands.getoutput("rm -rf /tmp/huaweitmp.cfg")
+        return output
+    
     
     def __getlistenercontent(self, hostname):
         _etcPath=self.__getCfgPath()
@@ -1035,12 +1152,28 @@ class ConfigHandler():
                     hostalias = 'HighDensityDetailsStatus@' + _hostName
                 elif _hostParmdic[CFG_NODE_KEY_DEVTYPE] == 'Blade':
                     hostalias = 'BladeDetailsStatus@' + _hostName
-                cfgcontent = self.__gethostservicescontent(_hostParmdic[CFG_NODE_KEY_DEVTYPE],\
+                cfgContent = self.__gethostservicescontent(_hostParmdic[CFG_NODE_KEY_DEVTYPE],\
                    _hostName, hostalias, hostIpAddress)
-                servicefile.writelines(cfgcontent)
+                
+                if _hostParmdic[CFG_NODE_KEY_DEVTYPE].lower() =="blade":
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"system")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"power")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"fan")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"shelf")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"smm")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"switch")
+                    cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"blade")
+                else :
+                     cfgContent +=self.__getObjContent(hostIpAddress,_hostParmdic,"raid")
+                servicefile.writelines(cfgContent)
+
+
         servicefile.writelines( self.__getlistenercontent("127.0.0.1") )
         servicefile.close()
-        commands.getoutput("sudo chown nagios.nagios " + _etcPath + os.path.sep +"hw_server.cfg")
+        if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+            commands.getoutput("sudo chown %s:%s "%(self._cmkuser,self._cmkgroup) + _etcPath + os.path.sep +"hw_server.cfg")
+        else:    
+            commands.getoutput("sudo chown %s:%s "%(self._nagiosuser,self._nagiosgroup) + _etcPath + os.path.sep +"hw_server.cfg")
         print "creatServerCfg ok"  
         
     def __getCfgPath(self):
@@ -1052,6 +1185,11 @@ class ConfigHandler():
         cmd = "source /etc/profile;echo $NAGIOSHOME"
         procs = commands.getoutput(cmd)
         return procs
+    def __find_ckmkVersion(self):
+        '''return nagios directory'''
+        cmd = "source /etc/profile;echo $NAGIOS_CHECKMK_VERSION"
+        procs = commands.getoutput(cmd)
+        return procs     
     def __getNagiosPath(self):
         return self._nagiosHomeDir   
         
@@ -1152,7 +1290,10 @@ class ConfigHandler():
         xmlfile = open(_hostfilePath , 'w')
         dom.writexml(xmlfile, addindent = '    ' , newl = '\n' , encoding = 'UTF-8')
         xmlfile.close()
-        commands.getoutput("sudo chown nagios.nagios " +_etcPath + os.path.sep + "huawei_hosts.xml") 
+        if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+            commands.getoutput("sudo chown %s:%s "%(self._cmkuser,self._cmkgroup) +_etcPath + os.path.sep + "huawei_hosts.xml")
+        else:    
+            commands.getoutput("sudo chown %s:%s "%(self._nagiosuser,self._nagiosgroup) +_etcPath + os.path.sep + "huawei_hosts.xml") 
         print "creathostxml ok" 
      
     #deccode an encrypt funs  -------------
@@ -1167,12 +1308,36 @@ class ConfigHandler():
         encryptpwd = encryptKey(pkey, self.getrootkey())
         return encryptpwd  
     #end deccode an encrypt funs  -------------    
-    
-     
+    def EditSourceFile(self):
+        nagioshome=self.__getNagiosPath()
+        if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+            SourceFile= "/omd/sites/%s/etc/nagios/resource.cfg"%(self._cmkuser)
+            
+        else :
+            SourceFile=nagioshome+os.path.sep +"etc"+os.path.sep+"resource.cfg" 
+        SourcInfo="$USER5$=%s/libexec\n"%nagioshome 
+        try:
+            file = open(SourceFile,"r+")
+            strlist=file.readlines()  
+            if SourcInfo in strlist:
+                return  
+            file.writelines(SourcInfo)  
+        except Exception,err:
+            print  "EditSourceFile exception info :" + str(err)  
+        finally:
+            if file is not None:
+                file.close()
+
     def addPlugincfgInNagios(self):
         nagioshome=self.__getNagiosPath()
-        NagioscfgFilePath=nagioshome+os.path.sep +"etc"+os.path.sep+"nagios.cfg" 
-        strforconfig="cfg_file=%s"%nagioshome+os.path.sep+"etc"+os.path.sep+"huawei_server"+os.path.sep+"hw_server.cfg\n"
+        self.EditSourceFile()
+
+        if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+            NagioscfgFilePath="/omd/sites/%s/etc/nagios/nagios.cfg"%(self._cmkuser)
+            strforconfig="precached_object_file=%s"%nagioshome+os.path.sep+"etc"+os.path.sep+"huawei_server"+os.path.sep+"hw_server.cfg\n"
+        else:  
+            NagioscfgFilePath=nagioshome+os.path.sep +"etc"+os.path.sep+"nagios.cfg"   
+            strforconfig="cfg_file=%s"%nagioshome+os.path.sep+"etc"+os.path.sep+"huawei_server"+os.path.sep+"hw_server.cfg\n"
         file=None
         try:
             file = open(NagioscfgFilePath,"r+")
@@ -1189,7 +1354,10 @@ class ConfigHandler():
                 file.close()
     def restartNagios(self):
         print "start kill trapd.py "
-        ret = os.system("service nagios stop")
+        if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+            ret = os.system("omd stop")
+        else:
+            ret = os.system("service nagios stop")
         if not ret == 0:
             print "stop Nagios fail "
         time.sleep(1)  
@@ -1197,14 +1365,17 @@ class ConfigHandler():
         os.system("kill -9  %s"%trapdpid)
         time.sleep(2)  
         try:
-            ret = os.system("service nagios restart")
+            if '1_4' in self.__chechmkVersion or  '1_5' in self.__chechmkVersion:
+                ret = os.system("omd restart")
+            else:
+                ret = os.system("service nagios restart")
             if not ret ==0:
                 print "start Nagios fail " 
                 print "please restart nagios service youself "                  
         except Exception ,err:
             print "start Nagios exception errif : %s"%str(err) 
             print "please restart nagios service yourself "
-        print "start Nagios servic ok"
+        print "start Nagios servic done"
 if __name__ == '__main__':
     main() 
        

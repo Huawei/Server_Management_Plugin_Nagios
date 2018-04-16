@@ -61,7 +61,7 @@ class Channel:
         result = ChannelResult();
         
         if self._target is None:
-            return result.setResult(NAIGOS_ERROR_INVALID_TARGET, "");
+            return result.setResult(NAGIOS_ERROR_INVALID_TARGET, "");
         
         errorIndication, errorStatus, errorIndex, varBinds = self._channel.getCmd(
                                                                            self._userData,
@@ -75,8 +75,8 @@ class Channel:
             result.setResult(NAGIOS_ERROR_FAILED, errorIndication);
         else:
             if errorStatus:
-                 self._logger.exception("get cmd: get oid info error:%s." % arBinds[int(errorIndex)-1][0]);
-                 result.setResult(NAIGOS_ERROR_INVALID_ENGINE, varBinds[int(errorIndex)-1][0]);
+                 self._logger.exception("get cmd: get oid info error:%s." % varBinds[int(errorIndex)-1][0]);
+                 result.setResult(NAGIOS_ERROR_INVALID_ENGINE, varBinds[int(errorIndex)-1][0]);
             else:
                 
                 data = {};
@@ -92,7 +92,7 @@ class Channel:
         result = ChannelResult();
         
         if self._target is None:
-            return result.setResult(NAIGOS_ERROR_INVALID_TARGET, "");
+            return result.setResult(NAGIOS_ERROR_INVALID_TARGET, "");
         
         errorIndication, errorStatus, errorIndex, varBindTable = self._channel.bulkCmd(
                                                                                 self._userData,
@@ -107,8 +107,8 @@ class Channel:
             
         else:
             if errorStatus:
-                self._logger.exception("bulk cmd: get oid info error:%s." % arBinds[int(errorIndex)-1][0]);
-                result.setResult(NAIGOS_ERROR_INVALID_ENGINE, varBinds[int(errorIndex)-1][0]);
+                self._logger.exception("bulk cmd: get oid info error:%s." % varBinds[int(errorIndex)-1][0]);
+                result.setResult(NAGIOS_ERROR_INVALID_ENGINE, varBinds[int(errorIndex)-1][0]);
             else:
                 data = {};
                 for varBindTableRow in varBindTable:
