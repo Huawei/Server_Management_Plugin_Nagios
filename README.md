@@ -1,14 +1,14 @@
 # Server_Management_Plugin_Nagios
 
 **********************************************************************************
-Nagios Manager,Monitoring Management Plugin Pack for Huawei Server
+Nagios plugin Pack for Huawei Server
 **********************************************************************************
 
 I. General Information 
 
     Name:     Nagios Plugin for Huawei Server    
     Category: Monitoring    
-    version : 1.0.3
+    version : 1.0.4
     
 II. Description
 
