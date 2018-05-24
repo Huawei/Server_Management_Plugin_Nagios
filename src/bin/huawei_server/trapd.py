@@ -300,20 +300,7 @@ class Initialization(object):
                 for agentip, hostdic in self._configdata.Hostdata.items():
                     # 当HOST_CFG_KEY_MODEL为None，标识无法获取设备型号
                     # 当HOST_CFG_KEY_ISSUCCESS为False，标识无法设置设备trap信息
-                    self._configdata._addType2HostCfgWithSNMP(hostdic)
-                    if hostdic[HOST_CFG_KEY_MODEL] is None \
-                            or hostdic[HOST_CFG_KEY_ISSUCCESS] == False:
-                        logger.info("type of "+ str(agentip) + " is null or failure of trap ip !")
-                        for srvname in ['alarm']:
-                            nagioscmd = nagioscmdtemplate % \
-                                    (str(time.time()), hostdic[HOST_CFG_KEY_NAME], \
-                                     srvname, str(const.STATUS_UNKNOWN_INT), \
-                                     const.STATUS_UNKNOWN_STR)
-                            cmdfile = open(self._configdata.Cmdfilepath, 'a')
-                            cmdfile.write(nagioscmd)
-                            logger.info(" nagioscmd in writting to cmdfile in timer is "+ str(nagioscmd))
-                        self._configdata.Hostdata.pop(agentip, None)
-                        continue
+
                     hostname = hostdic[HOST_CFG_KEY_NAME]
                     hostStatus = self._checkHosts(agentip)
                     logger.info("host status of " + str(agentip) + " is " + str(hostStatus))

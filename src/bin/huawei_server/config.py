@@ -3,7 +3,7 @@
 
 ############## PLUGIN VERSION ###########################
 
-VERSTION_STR ="HUAWEI PLUGIN V1.0.4" 
+VERSTION_STR ="HUAWEI PLUGIN V1.0.5" 
 ################################################
 '''
 Created on 2018-1-18
