@@ -8,7 +8,7 @@ I. General Information
 
     Name:     Nagios Plugin for Huawei Server    
     Category: Monitoring    
-    version : 1.0.4
+    version : 1.0.5
     
 II. Description
 
