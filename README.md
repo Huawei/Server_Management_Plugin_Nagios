@@ -17,7 +17,8 @@ II. Description
 III. Supported Software Version
 
     nagios core 3.5.1     
-    nagios core 4.3.4      
+    nagios core 4.3.4 
+    nagios core 4.4.5
     
 IV.Software Requirements
 
@@ -31,6 +32,7 @@ V. Supported Device
     Huawei Blade Server:        E9000
     Huawei Rack Server:         RH2288H V2,RH1288 V3,RH2288 V3,RH2288H V3,RH5885 V3,RH8100 V3,1288H V5,2288H V5,2488 V5    
     Huawei High-density Server: XH321 V3,XH620 V3,XH622 V3,XH628 V3 
+    Huawei TaiShan Server:TaiShan 200 server(model 2280;model 5280;model 5290;model 2480)
     
 VI. Additional Resources
 
