@@ -28,6 +28,7 @@ IV.Software Requirements
     pycrypto-2.3
     
 V. Supported Device
+
     X86 Architecture:
         Huawei Blade Server: E9000
         Huawei Rack Server: RH2288H V2,RH1288 V3,RH2288 V3,RH2288H V3,RH5885 V3,RH8100 V3,1288H V5,2288H V5,2488 V5,2288X V5, 1288H V6, 2288H V6, 5288 V6, 2488H V6    
